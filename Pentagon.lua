@@ -302,7 +302,7 @@ SlashCmdList["PENTAGON"] = function(msg)
 			frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", PentagonDB.position.x / scale, PentagonDB.position.y / scale)
 		end
 		
-		self:Print(string.format(L["Set scale to %.2f%%."], scale * 100))
+		self:Print(string.format(L["Set scale to %.2f"], scale))
 		PentagonDB.scale = scale
 	else
 		self:Print(L["Slash commands"])
@@ -313,6 +313,6 @@ SlashCmdList["PENTAGON"] = function(msg)
 		self:Echo(L["/pentagon outtext - Sets the text color when outside the five second rule."])
 		self:Echo(L["/pentagon chancolor - Sets the background color when outside the five second rule, but still chaneling."])
 		self:Echo(L["/pentagon chantext - Sets the text color when outside the five second rule, but still chaneling."])
-		self:Echo(L["/pentagon scale <scale> - Sets how big the block should be, 1 = 100%, 0.50 = 50% and so on."])
+		--self:Echo(L["/pentagon scale <scale> - Sets how big the block should be, 1 = 100%, 0.50 = 50% and so on."])
 	end
 end
