@@ -47,7 +47,7 @@ function Pentagon:UNIT_MANA(unit)
 	-- At max, so stop monitoring
 	if( UnitPowerMax("player", 0) == mana ) then
 		ruleStart = 0
-		isChannel = 0
+		isChannel = nil
 
 		self.evtFrame:Hide()
 		self:UpdateFrame()
@@ -79,7 +79,7 @@ function Pentagon:UpdateFrame()
 	if( not frame ) then
 		return
 	end
-	
+		
 	-- If we're channeling, and "out" of FSR, then set it to 0/red since we don't actually exit it until the channel is done
 	if( ruleStart == 0 and isChannel ) then
 		frame:SetBackdropColor(PentagonDB.backgroundChannel.r, PentagonDB.backgroundChannel.g, PentagonDB.backgroundChannel.b, 1.0)
