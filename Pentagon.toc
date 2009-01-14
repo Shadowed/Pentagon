@@ -1,0 +1,8 @@
+## Interface: 30000
+## Title: Pentagon
+## Notes: Shows your regen using the five second rule.
+## SavedVariables: PentagonDB
+
+localization.enUS.lua
+
+Pentagon.lua
