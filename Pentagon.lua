@@ -283,11 +283,11 @@ SlashCmdList["PENTAGON"] = function(msg)
 		self:Print(L["Now setting text color when outside the five second rule, but still channeling."])
 		showColor("channelTextColor")
 	
-	elseif( string.match(msg, "scale (%d+)") ) then
-		local scale = string.match(msg, "scale (%d+)")
+	elseif( string.match(msg, "^scale") ) then
+		local scale = select(2, string.split(" ", msg))
 		scale = tonumber(scale)
 		
-		if( not scale ) then
+		if( not scale or scale >= 3 ) then
 			self:Print(L["Invalid scale entered, must be a number."])
 			return
 		end
@@ -302,6 +302,7 @@ SlashCmdList["PENTAGON"] = function(msg)
 			frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", PentagonDB.position.x / scale, PentagonDB.position.y / scale)
 		end
 		
+		self:Print(string.format(L["Set scale to %.2f%%."], scale * 100))
 		PentagonDB.scale = scale
 	else
 		self:Print(L["Slash commands"])
@@ -312,6 +313,6 @@ SlashCmdList["PENTAGON"] = function(msg)
 		self:Echo(L["/pentagon outtext - Sets the text color when outside the five second rule."])
 		self:Echo(L["/pentagon chancolor - Sets the background color when outside the five second rule, but still chaneling."])
 		self:Echo(L["/pentagon chantext - Sets the text color when outside the five second rule, but still chaneling."])
-		self:Echo(L["/pentagon scale <scale> - Sets how big the block should be."])
+		self:Echo(L["/pentagon scale <scale> - Sets how big the block should be, 1 = 100%, 0.50 = 50% and so on."])
 	end
 end
