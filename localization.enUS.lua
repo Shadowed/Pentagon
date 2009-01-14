@@ -5,8 +5,8 @@ PentagonLocals = {
 	["/pentagon intext - Sets the text color when inside the five second rule."] = "/pentagon intext - Sets the text color when inside the five second rule.",
 	["/pentagon outcolor - Sets the background color when outside the five second rule."] = "/pentagon outcolor - Sets the background color when outside the five second rule.",
 	["/pentagon outtext - Sets the text color when outside the five second rule."] = "/pentagon outtext - Sets the text color when outside the five second rule.",
-	["/pentagon chancolor - Sets the background color when outside the five second rule, but still chaneling."] = "/pentagon chancolor - Sets the background color when outside the five second rule, but still chaneling.",
-	["/pentagon chantext - Sets the text color when outside the five second rule, but still chaneling."] = "/pentagon chantext - Sets the text color when outside the five second rule, but still chaneling.",
+	["/pentagon chancolor - Sets the background color when outside the five second rule, but still channeling."] = "/pentagon chancolor - Sets the background color when outside the five second rule, but still channeling.",
+	["/pentagon chantext - Sets the text color when outside the five second rule, but still channeling."] = "/pentagon chantext - Sets the text color when outside the five second rule, but still channeling.",
 	["/pentagon scale <scale> - Sets how big the block should be, 1 = 100%, 0.50 = 50% and so on."] = "/pentagon scale <scale> - Sets how big the block should be, 1 = 100%, 0.50 = 50% and so on.",
 	
 	["Now setting the background color when inside the five second rule."] = "Now setting the background color when inside the five second rule.",

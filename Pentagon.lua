@@ -8,6 +8,7 @@ function Pentagon:OnInitialize()
 	-- Make sure they even need this
 	local class = select(2, UnitClass("player"))
 	if( class == "ROGUE" or class == "WARRIOR" or class == "DEATHKNIGHT" ) then
+		self.disabled = true
 		self.evtFrame:UnregisterAllEvents()
 		return
 	end
@@ -28,10 +29,6 @@ function Pentagon:OnInitialize()
 	if( PentagonDB.visible ) then
 		self:CreateFrame()
 	end
-
-	-- Register!
-	self.evtFrame:RegisterEvent("UNIT_MANA")
-	self.evtFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
 	
 	-- Set default mana
 	playerMana = UnitPower("player", 0)
@@ -44,16 +41,7 @@ function Pentagon:UNIT_MANA(unit)
 	end
 	
 	local mana = UnitPower("player", 0)
-	-- At max, so stop monitoring
-	if( UnitPowerMax("player", 0) == mana ) then
-		ruleStart = 0
-		isChannel = nil
-
-		self.evtFrame:Hide()
-		self:UpdateFrame()
-		
-	-- Mana reduced, start timer
-	elseif( mana < playerMana ) then
+	if( mana < playerMana ) then
 		-- Experiment, calibration based off lag
 		isChannel = UnitChannelInfo("player")
 		ruleStart = GetTime() + 5 - (select(3, GetNetStats()) / 1000)
@@ -71,6 +59,11 @@ function Pentagon:UNIT_SPELLCAST_CHANNEL_STOP(unit, ...)
 	end
 	
 	isChannel = nil
+	self:UpdateFrame()
+end
+
+-- Update MP5
+function Pentagon:PLAYERSTAT_SPELL_COMBAT()
 	self:UpdateFrame()
 end
 
@@ -151,6 +144,8 @@ function Pentagon:CreateFrame()
 		frame:SetBackdrop(backdrop)
 		frame:SetBackdropColor(0.0, 0.0, 0.0, 1.0)
 		frame:SetBackdropBorderColor(0.75, 0.75, 0.75, 1.0)
+		frame:Hide()
+		
 		frame:SetScript("OnMouseUp", function(self)
 			if( self.isMoving ) then
 				self.isMoving = nil
@@ -166,7 +161,29 @@ function Pentagon:CreateFrame()
 				self:StartMoving()
 			end
 		end)
-		
+		frame:SetScript("OnShow", function()
+			-- Position
+			if( PentagonDB.position ) then
+				local scale = frame:GetEffectiveScale()
+
+				frame:ClearAllPoints()
+				frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", PentagonDB.position.x / scale, PentagonDB.position.y / scale)
+			else
+				frame:SetPoint("CENTER", UIParent, "CENTER")
+			end
+
+			-- Register!
+			Pentagon.evtFrame:RegisterEvent("UNIT_MANA")
+			Pentagon.evtFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+			Pentagon.evtFrame:RegisterEvent("PLAYERSTAT_SPELL_COMBAT")
+		end)
+		frame:SetScript("OnHide", function()
+			-- Unregister!
+			Pentagon.evtFrame:UnregisterEvent("UNIT_MANA")
+			Pentagon.evtFrame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+			Pentagon.evtFrame:UnregisterEvent("PLAYERSTAT_SPELL_COMBAT")
+		end)
+	
 		frame:SetScale(PentagonDB.scale)
 	
 		-- Time left before exiting
@@ -180,16 +197,6 @@ function Pentagon:CreateFrame()
 		frame.currentMP:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -2, -3)
 		
 		self:UpdateFrame()
-	end
-	
-	-- Position
-	if( PentagonDB.position ) then
-		local scale = frame:GetEffectiveScale()
-
-		frame:ClearAllPoints()
-		frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", PentagonDB.position.x / scale, PentagonDB.position.y / scale)
-	else
-		frame:SetPoint("CENTER", UIParent, "CENTER")
 	end
 	
 	frame:Show()
@@ -247,6 +254,11 @@ SlashCmdList["PENTAGON"] = function(msg)
 	msg = string.lower(msg or "")
 	
 	local self = Pentagon
+	if( self.disabled ) then
+		SlashCmdList["PENTAGON"] = nil
+		return
+	end
+	
 	if( msg == "visible" ) then
 		PentagonDB.visible = not PentagonDB.visible
 
@@ -311,8 +323,8 @@ SlashCmdList["PENTAGON"] = function(msg)
 		self:Echo(L["/pentagon intext - Sets the text color when inside the five second rule."])
 		self:Echo(L["/pentagon outcolor - Sets the background color when outside the five second rule."])
 		self:Echo(L["/pentagon outtext - Sets the text color when outside the five second rule."])
-		self:Echo(L["/pentagon chancolor - Sets the background color when outside the five second rule, but still chaneling."])
-		self:Echo(L["/pentagon chantext - Sets the text color when outside the five second rule, but still chaneling."])
+		self:Echo(L["/pentagon chancolor - Sets the background color when outside the five second rule, but still channeling."])
+		self:Echo(L["/pentagon chantext - Sets the text color when outside the five second rule, but still channeling."])
 		--self:Echo(L["/pentagon scale <scale> - Sets how big the block should be, 1 = 100%, 0.50 = 50% and so on."])
 	end
 end
