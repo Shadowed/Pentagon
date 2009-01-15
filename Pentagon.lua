@@ -81,7 +81,7 @@ function Pentagon:UNIT_SPELLCAST_CHANNEL_STOP(unit, ...)
 end
 
 -- Update MP5
-function Pentagon:PLAYERSTAT_SPELL_COMBAT()
+function Pentagon:PLAYER_DAMAGE_DONE_MODS()
 	self:UpdateFrame()
 end
 
