@@ -3,6 +3,10 @@
 ## Notes: Shows your regen using the five second rule.
 ## SavedVariables: PentagonDB
 
+libs\LibStub-1.0.lua
+libs\CallbackHandler-1.0.lua
+libs\LibDataBroker-1.0\LibDataBroker-1.0.lua
+
 localization.enUS.lua
 
 Pentagon.lua

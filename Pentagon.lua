@@ -2,7 +2,7 @@ Pentagon = {}
 
 local L = PentagonLocals
 local ruleStart = 0
-local playerMana, frame
+local playerMana, frame, LDBObj
 
 function Pentagon:OnInitialize()
 	-- Make sure they even need this
@@ -16,6 +16,8 @@ function Pentagon:OnInitialize()
 	-- Setup default DB
 	PentagonDB = PentagonDB or {
 		visible = true,
+		disabled = false,
+		ldb = false,
 		scale = 1.0,
 		backgroundIn = { r = 0.0, g = 0.0, b = 0.0 },
 		inTextColor = { r = 1.0, g = 1.0, b = 1.0 },
@@ -25,11 +27,21 @@ function Pentagon:OnInitialize()
 		channelTextColor = { r = 1.0, g = 1.0, b = 1.0 },
 	}
 	
-	-- Showing frame if needed
-	if( PentagonDB.visible ) then
-		self.evtFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+	if( PentagonDB.ldb and not LDBObj ) then
+		LDBObj = LibStub("LibDataBroker-1.1"):NewDataObject("Pentagon", {type = "data source", icon = "Interface\\Icons\\Spell_Nature_Sleep", text = "-- (----)"})
 	end
 	
+	if( not PentagonDB.disabled ) then
+		-- Showing frame if needed
+		if( PentagonDB.visible ) then
+			self.evtFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+		end
+
+		Pentagon.evtFrame:RegisterEvent("UNIT_MANA")
+		Pentagon.evtFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+		Pentagon.evtFrame:RegisterEvent("PLAYER_DAMAGE_DONE_MODS")
+	end
+
 	-- Set default mana
 	playerMana = UnitPower("player", 0)
 end
@@ -75,6 +87,8 @@ end
 
 -- Update frame display
 function Pentagon:UpdateFrame()
+	self:UpdateLDB()
+	
 	if( not frame ) then
 		return
 	end
@@ -110,20 +124,38 @@ function Pentagon:UpdateFrame()
 	end
 end
 
+function Pentagon:UpdateLDB()
+	if( not LDBObj ) then
+		return
+	end
+
+	if( ruleStart == 0 and isChannel ) then
+		LDBObj.text = string.format("|cffff2020%d|r (%d)", 0, (select(2, GetManaRegen()) * 5))
+	elseif( ruleStart > 0 ) then
+		LDBObj.text = string.format("%.1f (%d)", ruleStart - GetTime(), (select(2, GetManaRegen()) * 5))
+	else
+		LDBObj.text = string.format("|cff20ff20%d|r (%d)", 0, (GetManaRegen() * 5))
+	end
+end
+
 -- FSR monitor
 local timeElapsed = 0
+local LDBElapsed = 0
 local function fsrMonitor(self, elapsed)
+	-- Left the FSR
 	if( ruleStart < GetTime() ) then
 		ruleStart = 0
 		self:Hide()
 
 		Pentagon:UpdateFrame()
-	end
 	
-	if( ruleStart > 0 ) then
+	-- Update frame since we haven't left the FSR yet, but cap it at every 0.10 seconds
+	elseif( ruleStart > 0 ) then
 		timeElapsed = timeElapsed + elapsed
 		
 		if( timeElapsed >= 0.10 ) then
+			timeElapsed = 0
+			
 			Pentagon:UpdateFrame()
 		end
 	end
@@ -177,17 +209,6 @@ function Pentagon:CreateFrame()
 			else
 				frame:SetPoint("CENTER", UIParent, "CENTER")
 			end
-
-			-- Register!
-			Pentagon.evtFrame:RegisterEvent("UNIT_MANA")
-			Pentagon.evtFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-			Pentagon.evtFrame:RegisterEvent("PLAYERSTAT_SPELL_COMBAT")
-		end)
-		frame:SetScript("OnHide", function()
-			-- Unregister!
-			Pentagon.evtFrame:UnregisterEvent("UNIT_MANA")
-			Pentagon.evtFrame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-			Pentagon.evtFrame:UnregisterEvent("PLAYERSTAT_SPELL_COMBAT")
 		end)
 	
 		frame:SetScale(PentagonDB.scale)
@@ -277,6 +298,30 @@ SlashCmdList["PENTAGON"] = function(msg)
 				frame:Hide()
 			end
 		end
+	
+	elseif( msg == "ldb" ) then
+		PentagonDB.ldb = not PentagonDB.ldb
+		
+		if( PentagonDB.ldb ) then
+			if( PentagonDB.ldb and not LDBObj ) then
+				LDBObj = LibStub("LibDataBroker-1.1"):NewDataObject("Pentagon", {type = "data source", icon = "Interface\\Icons\\Spell_Nature_Sleep", text = "-- (----)"})
+			end
+			
+			self:UpdateFrame()
+			self:Print(L["Now showing the LibDataBroker-1.0 widget."])
+		else
+			self:Print(L["No longer showing the LibDataBroker-1.0 widget, a game restart is required for this to take affect."])
+		end
+	
+	elseif( msg == "disabled" ) then
+		PentagonDB.disabled = not PentagonDB.disabled
+		
+		if( not PentagonDB.disabled ) then
+			self:Print(L["Pentagon will be enabled next time you enter the game."])
+		else
+			self:Print(L["Pentagon will be disabled next time you enter the game."])
+		end
+	
 	elseif( msg == "incolor" ) then
 		self:Print(L["Now setting the background color when inside the five second rule."])
 		showColor("backgroundIn")
@@ -331,6 +376,7 @@ SlashCmdList["PENTAGON"] = function(msg)
 		self:Echo(L["/pentagon outtext - Sets the text color when outside the five second rule."])
 		self:Echo(L["/pentagon chancolor - Sets the background color when outside the five second rule, but still channeling."])
 		self:Echo(L["/pentagon chantext - Sets the text color when outside the five second rule, but still channeling."])
+		self:Echo(L["/pentagon ldb - Toggles showing the LibDataBroker-1.0 widget."])
 		--self:Echo(L["/pentagon scale <scale> - Sets how big the block should be, 1 = 100%, 0.50 = 50% and so on."])
 	end
 end

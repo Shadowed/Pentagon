@@ -8,7 +8,14 @@ PentagonLocals = {
 	["/pentagon chancolor - Sets the background color when outside the five second rule, but still channeling."] = "/pentagon chancolor - Sets the background color when outside the five second rule, but still channeling.",
 	["/pentagon chantext - Sets the text color when outside the five second rule, but still channeling."] = "/pentagon chantext - Sets the text color when outside the five second rule, but still channeling.",
 	["/pentagon scale <scale> - Sets how big the block should be, 1 = 100%, 0.50 = 50% and so on."] = "/pentagon scale <scale> - Sets how big the block should be, 1 = 100%, 0.50 = 50% and so on.",
+	["/pentagon ldb - Toggles showing the LibDataBroker-1.0 widget."] = "/pentagon ldb - Toggles showing the LibDataBroker-1.0 widget.",
 	
+	["No longer showing the LibDataBroker-1.0 widget, a game restart is required for this to take affect."] = "No longer showing the LibDataBroker-1.0 widget, a game restart is required for this to take affect.",
+	["Now showing the LibDataBroker-1.0 widget."] = "Now showing the LibDataBroker-1.0 widget.",
+	
+	["Pentagon will be disabled next time you enter the game."] = "Pentagon will be disabled next time you enter the game.",
+	["Pentagon will be enabled next time you enter the game."] = "Pentagon will be enabled next time you enter the game.",
+  	
 	["Now setting the background color when inside the five second rule."] = "Now setting the background color when inside the five second rule.",
 	["Now setting the text color when inside the five second rule."] = "Now setting the text color when inside the five second rule.",
 	
