@@ -27,11 +27,17 @@ function Pentagon:OnInitialize()
 	
 	-- Showing frame if needed
 	if( PentagonDB.visible ) then
-		self:CreateFrame()
+		self.evtFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 	end
 	
 	-- Set default mana
 	playerMana = UnitPower("player", 0)
+end
+
+-- Stupid, but we have to delay PEW due to UI scale
+function Pentagon:PLAYER_ENTERING_WORLD()
+	self:CreateFrame()
+	self.evtFrame:UnregisterEvent("PLAYER_ENTERING_WORLD")
 end
 
 -- Mana changed, might need to start the rule
