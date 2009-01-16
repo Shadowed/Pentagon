@@ -30,4 +30,10 @@ PentagonLocals = {
 	["Invalid scale entered, must be a number."] = "Invalid scale entered, must be a number.",
 	["No longer showing the FSR block."] = "No longer showing the FSR block.",
 	["Now showing the FSR block."] = "Now showing the FSR block.",
+	
+	["Combat time"] = "Combat time",
+	["In / Out"] = "In / Out",
+	["Avg: %s"] = "Avg: %s",
+	["No data available yet."] = "No data available yet.",
+	["Combat must last longer than 10 seconds to show."] = "Combat must last longer than 10 seconds to show.",
 }

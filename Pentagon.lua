@@ -2,7 +2,10 @@ Pentagon = {}
 
 local L = PentagonLocals
 local ruleStart = 0
-local playerMana, frame, LDBObj
+local totalTimeIn = 0
+local fsrStats = {}
+local playerMana, frame, LDBObj, startedCombat, timeInRule, startedInside
+local MAX_RECORDS = 4
 
 function Pentagon:OnInitialize()
 	-- Make sure they even need this
@@ -28,7 +31,7 @@ function Pentagon:OnInitialize()
 	}
 	
 	if( PentagonDB.ldb and not LDBObj ) then
-		LDBObj = LibStub("LibDataBroker-1.1"):NewDataObject("Pentagon", {type = "data source", icon = "Interface\\Icons\\Spell_Nature_Sleep", text = "-- (----)"})
+		LDBObj = LibStub("LibDataBroker-1.1"):NewDataObject("Pentagon", {type = "data source", OnTooltipShow = Pentagon.OnTooltipShow, icon = "Interface\\Icons\\Spell_Nature_Sleep", text = "-- (----)"})
 	end
 	
 	if( not PentagonDB.disabled ) then
@@ -37,9 +40,11 @@ function Pentagon:OnInitialize()
 			self.evtFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 		end
 
-		Pentagon.evtFrame:RegisterEvent("UNIT_MANA")
-		Pentagon.evtFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-		Pentagon.evtFrame:RegisterEvent("PLAYER_DAMAGE_DONE_MODS")
+		self.evtFrame:RegisterEvent("UNIT_MANA")
+		self.evtFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+		self.evtFrame:RegisterEvent("PLAYER_DAMAGE_DONE_MODS")
+		self.evtFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+		self.evtFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 	end
 
 	-- Set default mana
@@ -60,6 +65,11 @@ function Pentagon:UNIT_MANA(unit)
 	
 	local mana = UnitPower("player", 0)
 	if( mana < playerMana ) then
+		-- Entered FSR but was out, start it up
+		if( ruleStart == 0 ) then
+			startedInside = GetTime()
+		end
+	
 		-- Experiment, calibration based off lag
 		isChannel = UnitChannelInfo("player")
 		ruleStart = GetTime() + 5 - (select(3, GetNetStats()) / 1000)
@@ -146,8 +156,13 @@ local function fsrMonitor(self, elapsed)
 	if( ruleStart < GetTime() ) then
 		ruleStart = 0
 		self:Hide()
-
 		Pentagon:UpdateFrame()
+
+		-- Update stats
+		if( startedInside ) then
+			totalTimeIn = totalTimeIn + (GetTime() - startedInside)
+			startedInside = nil
+		end
 	
 	-- Update frame since we haven't left the FSR yet, but cap it at every 0.10 seconds
 	elseif( ruleStart > 0 ) then
@@ -199,6 +214,14 @@ function Pentagon:CreateFrame()
 				self:StartMoving()
 			end
 		end)
+		frame:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
+			Pentagon.OnTooltipShow(GameTooltip)
+			GameTooltip:Show()
+		end)
+		frame:SetScript("OnHide", function(self)
+			GameTooltip:Hide()
+		end)
 		frame:SetScript("OnShow", function()
 			-- Position
 			if( PentagonDB.position ) then
@@ -227,6 +250,77 @@ function Pentagon:CreateFrame()
 	end
 	
 	frame:Show()
+end
+
+-- Left combat, figure out stats
+function Pentagon:PLAYER_REGEN_ENABLED()
+	if( startedCombat ) then
+		-- Only store records if we were in combat for 10 or more seconds
+		local combatTime = GetTime() - startedCombat
+		if( combatTime >= 10 ) then
+			-- They are still considered to be inside, so calculate it for this and reset the start time to right now
+			if( startedInside ) then
+				totalTimeIn = totalTimeIn + (GetTime() - startedInside)
+				startedInside = GetTime()
+			end
+			
+			-- If you enter the FSR before entering combat, and stay in it 100% of the time, this can be higher so just kill that quickly
+			if( totalTimeIn > combatTime ) then
+				totalTimeIn = combatTime
+			end
+		
+			table.insert(fsrStats, string.format("%.2f:%.2f", combatTime, totalTimeIn))
+			
+			-- Don't keep too many records
+			if( #(fsrStats) > MAX_RECORDS ) then
+				table.remove(fsrStats, 1)
+			end
+		end
+	end
+end
+
+-- Entered combat
+function Pentagon:PLAYER_REGEN_DISABLED()
+	totalTimeIn = 0
+	startedCombat = GetTime()
+end
+
+function Pentagon.OnTooltipShow(tooltip)
+	tooltip:ClearLines()
+
+	if( #(fsrStats) == 0 ) then
+		tooltip:AddLine(L["No data available yet."])
+		tooltip:AddLine(L["Combat must last longer than 10 seconds to show."])
+		return
+	end
+	
+	-- Figure out the averages first
+	local totalRecords, totalCombat, totalInside = 0, 0, 0
+	for id, stat in pairs(fsrStats) do
+		local combatTime, timeInside = string.split(":", stat)
+		
+	
+		totalRecords = totalRecords + 1
+		totalCombat = totalCombat + combatTime
+		totalInside = totalInside + timeInside
+	end
+	
+	local averageCombat = totalCombat / totalRecords
+	local averageIn = (totalInside / totalRecords) / averageCombat
+	local averageOut = ((totalCombat - totalInside) / totalRecords) / averageCombat
+	
+	-- Start building the tooltip with stats and fun stuff like that
+	tooltip:AddDoubleLine(L["Combat time"], L["In / Out"], 0.90, 0.90, 0.90, 0.90, 0.90, 0.90)
+	tooltip:AddDoubleLine(string.format(L["Avg: %s"], SecondsToTime(averageCombat)), string.format("%d%% / %d%%", math.floor(averageIn * 100 + 0.5), math.floor(averageOut * 100 + 0.5)), 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+	
+	for i=#(fsrStats), 1, -1 do
+		local stat = fsrStats[i]
+		local combatTime, timeInside = string.split(":", stat)
+		local percentInside = timeInside / combatTime
+		local percentOutside = (combatTime - timeInside) / combatTime
+		
+		tooltip:AddDoubleLine(string.format("[#%d] %s", (#(fsrStats) - i) + 1, SecondsToTime(combatTime)), string.format("%d%% / %d%%", math.floor(percentInside * 100 + 0.5), math.floor(percentOutside * 100 + 0.5)), 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+	end
 end
 
 -- Random junk
@@ -304,7 +398,7 @@ SlashCmdList["PENTAGON"] = function(msg)
 		
 		if( PentagonDB.ldb ) then
 			if( PentagonDB.ldb and not LDBObj ) then
-				LDBObj = LibStub("LibDataBroker-1.1"):NewDataObject("Pentagon", {type = "data source", icon = "Interface\\Icons\\Spell_Nature_Sleep", text = "-- (----)"})
+				LDBObj = LibStub("LibDataBroker-1.1"):NewDataObject("Pentagon", {type = "data source", OnTooltipShow = Pentagon.OnTooltipShow, icon = "Interface\\Icons\\Spell_Nature_Sleep", text = "-- (----)"})
 			end
 			
 			self:UpdateFrame()
